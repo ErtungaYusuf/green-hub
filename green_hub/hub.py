@@ -80,6 +80,9 @@ class Hub(LocalUI):
         self.lock = threading.Lock()
         self.samples: deque = deque(maxlen=720)          # (time, balance): the miner's last hour at 5 s
         self.compute = {"busy": False, "what": None, "result": None, "error": None}
+        w = _read(data)
+        if w is not None and ("phrase" in w or "secret" in w):    # not encrypted (a local network's): no password
+            self._use(unlock(w, ""))
 
     # -- the key ------------------------------------------------------------------------
 

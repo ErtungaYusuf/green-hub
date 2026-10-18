@@ -133,3 +133,16 @@ def test_web_pages_cannot_use_the_hub(world):
     assert refused(hub, "/", token=False, headers={"Host": "evil.example"})[0] == 403
     assert refused(hub, "/api/state", token=False, headers={"Host": "evil.example:8630"})[0] == 403
     assert not mine.mining
+
+
+def test_an_unencrypted_wallet_needs_no_password(world, tmp_path):
+    hub, seller, mine, carol = world
+    folder = str(tmp_path / "plain")
+    key = create_wallet(folder, None)
+    plain = Hub(folder, mine.url, port=0)
+    plain.start()
+    try:
+        st = call(plain, "/api/state", token=False)
+        assert st["unlocked"] and not st["encrypted"] and st["address"] == key.address
+    finally:
+        plain.stop()
