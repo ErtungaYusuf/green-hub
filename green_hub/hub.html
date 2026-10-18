@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Green Hub</title>
+<style>
+:root { --bg:#f6f7f4; --panel:#fff; --ink:#1d2420; --muted:#66706a; --line:#e2e5df; --accent:#1f8a4c; --accent-ink:#fff;
+        --soft:#e8f3ec; --bad:#b42318; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+@media (prefers-color-scheme: dark) { :root { --bg:#111513; --panel:#181d1a; --ink:#e6ebe7; --muted:#94a09a; --line:#2a312d;
+        --accent:#3fbf74; --accent-ink:#0c140f; --soft:#1d2a22; --bad:#f06a5f; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+main { max-width:860px; margin:0 auto; padding:24px 16px 48px; display:grid; gap:16px; }
+header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; }
+h1 { margin:0; font-size:20px; } h1 span { color:var(--accent); }
+.sub { color:var(--muted); font-size:13px; }
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+.panel h2 { margin:0 0 10px; font-size:15px; }
+nav { display:flex; gap:6px; border-bottom:1px solid var(--line); overflow-x:auto; }
+nav button { font:inherit; background:none; border:none; border-bottom:2px solid transparent; color:var(--muted);
+             padding:8px 14px; cursor:pointer; white-space:nowrap; }
+nav button.sel { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+.balance { font-size:34px; font-variant-numeric:tabular-nums; letter-spacing:-.5px; }
+.addr { font-family:var(--mono); font-size:13px; word-break:break-all; background:var(--bg); border:1px solid var(--line);
+        border-radius:8px; padding:8px 10px; }
+.row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+input, textarea, select { font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+input { flex:1; min-width:120px; } input.dim { flex:0 1 90px; min-width:70px; }
+textarea { width:100%; min-height:80px; font-family:var(--mono); font-size:13px; }
+input[type=range] { padding:0; accent-color:var(--accent); min-width:160px; }
+button.b { font:inherit; border:1px solid var(--accent); background:var(--accent); color:var(--accent-ink); border-radius:8px; padding:8px 14px; cursor:pointer; }
+button.ghost { background:transparent; color:var(--accent); }
+button:disabled { opacity:.55; cursor:default; }
+.msg { font-size:13px; min-height:1.4em; } .msg.bad { color:var(--bad); }
+.phrase { font-family:var(--mono); background:var(--soft); border:1px solid var(--accent); border-radius:8px; padding:12px;
+          display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:4px 12px; }
+table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+td, th { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); font-size:13px; }
+th { color:var(--muted); font-weight:550; }
+.in { color:var(--accent); }
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+.tile .v { font-size:22px; font-variant-numeric:tabular-nums; } .tile .k { color:var(--muted); font-size:12.5px; }
+.state { font-size:24px; font-weight:650; } .state.on { color:var(--accent); }
+.seg button { font:inherit; border:1px solid var(--line); background:var(--bg); color:var(--ink); padding:7px 14px; cursor:pointer; }
+.seg button:first-child { border-radius:8px 0 0 8px; } .seg button:last-child { border-radius:0 8px 8px 0; }
+.seg button.sel { background:var(--soft); border-color:var(--accent); color:var(--accent); font-weight:600; }
+.mono { font-family:var(--mono); font-size:12.5px; word-break:break-all; }
+[hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1><span>Green</span> Hub</h1><div class="sub" id="where">connecting...</div></header>
+
+  <section class="panel" id="setup" hidden>
+    <h2>No wallet in this folder yet</h2>
+    <div class="row"><input id="newpw" type="password" placeholder="password (at least 8 characters)" autocomplete="new-password"></div>
+    <div class="row"><button class="b" id="create">Create a new wallet</button></div>
+    <p class="sub">Or restore one from its recovery phrase:</p>
+    <textarea id="phrase" placeholder="the 12 or 24 words, in order" autocomplete="off"></textarea>
+    <div class="row"><button class="b ghost" id="restore">Restore</button></div>
+    <div class="msg" id="setupmsg"></div>
+  </section>
+
+  <section class="panel" id="newphrase" hidden>
+    <h2>Write down your recovery phrase</h2>
+    <p class="sub">On paper, in order, kept offline. With it the wallet can be restored anywhere; anyone who sees it can take your
+      coins; nobody can recover it for you. It is shown only now.</p>
+    <div class="phrase" id="words"></div>
+    <div class="row"><button class="b" id="written">I have written it down</button></div>
+  </section>
+
+  <section class="panel" id="locked" hidden>
+    <h2>Unlock</h2>
+    <div class="row"><input id="pw" type="password" placeholder="password" autocomplete="current-password"><button class="b" id="unlock">Unlock</button></div>
+    <div class="msg" id="unlockmsg"></div>
+  </section>
+
+  <nav id="tabs" hidden>
+    <button data-tab="wallet" class="sel">Wallet</button><button data-tab="compute">Buy compute</button><button data-tab="mining">Mining</button>
+  </nav>
+
+  <!-- Wallet -->
+  <div class="tab" id="tab-wallet" hidden style="display:grid;gap:16px">
+    <section class="panel">
+      <div class="sub">Balance</div>
+      <div class="balance" id="balance">-</div>
+      <div class="sub" id="pending"></div>
+      <h2 style="margin-top:14px">Receive</h2>
+      <div class="row"><div class="addr" id="address" style="flex:1"></div><button class="b ghost" id="copy">Copy</button></div>
+    </section>
+    <section class="panel needs-key">
+      <h2>Send</h2>
+      <div class="row"><input id="to" placeholder="recipient address (grn1...)" autocomplete="off"></div>
+      <div class="row"><input id="amount" placeholder="amount in GRN" inputmode="decimal"><button class="b" id="send">Send</button></div>
+      <div class="sub" id="fee"></div>
+      <div class="msg" id="sendmsg"></div>
+      <div class="row"><button class="b ghost" id="lock">Lock the wallet</button></div>
+    </section>
+    <section class="panel">
+      <h2>History</h2>
+      <table><thead><tr><th>Block</th><th>What</th><th>Amount</th><th>With</th></tr></thead><tbody id="history"></tbody></table>
+    </section>
+  </div>
+
+  <!-- Compute -->
+  <div class="tab" id="tab-compute" hidden style="display:grid;gap:16px">
+    <section class="panel">
+      <h2>Buy a matrix product</h2>
+      <p class="sub">Random int8 matrices A (m×k) and B (k×n), multiplied by the network's miners. You pay per product through
+        payment channels (the first purchase opens them: one block); every result is checked before it is paid for, and
+        compared with the same product computed here.</p>
+      <div class="row">
+        <input class="dim" id="m" value="512" inputmode="numeric" aria-label="m"> ×
+        <input class="dim" id="k" value="512" inputmode="numeric" aria-label="k"> ×
+        <input class="dim" id="n" value="512" inputmode="numeric" aria-label="n">
+        <select id="privacy" aria-label="privacy">
+          <option value="split">split: no miner sees the whole problem</option>
+          <option value="secret">secret: miners see only random shares (3 needed)</option>
+          <option value="none">none: one miner sees the data</option>
+        </select>
+        <button class="b" id="buy">Buy</button>
+      </div>
+      <div class="msg" id="computemsg"></div>
+      <div class="sub" id="channels"></div>
+      <div class="row"><button class="b ghost" id="close">Close my channels (unused coins come back)</button></div>
+    </section>
+    <section class="panel">
+      <h2>Post a job on chain</h2>
+      <p class="sub">Matrices published to every node; miners compute its units as their mining work and are paid per unit
+        from the escrow; your node checks every result and disputes wrong ones.</p>
+      <div class="row">
+        <input class="dim" id="jm" value="512" inputmode="numeric" aria-label="m"> ×
+        <input class="dim" id="jk" value="256" inputmode="numeric" aria-label="k"> ×
+        <input class="dim" id="jn" value="512" inputmode="numeric" aria-label="n">
+        <input id="jprice" value="0.00002" inputmode="decimal" aria-label="price per unit in GRN" style="flex:0 1 140px">
+        <span class="sub">GRN per unit</span>
+        <button class="b" id="job">Post</button>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>On offer</h2>
+      <table><thead><tr><th>Provider</th><th>Price per unit</th><th>Largest side</th></tr></thead><tbody id="offers"></tbody></table>
+    </section>
+  </div>
+
+  <!-- Mining -->
+  <div class="tab" id="tab-mining" hidden style="display:grid;gap:16px">
+    <section class="panel row" style="justify-content:space-between">
+      <div><div class="state" id="mstate">-</div><div class="sub" id="device"></div></div>
+      <button class="b" id="toggle">Start mining</button>
+    </section>
+    <section class="tiles">
+      <div class="panel tile"><div class="v" id="speed">-</div><div class="k">work units per second</div></div>
+      <div class="panel tile"><div class="v" id="shares">-</div><div class="k">shares found (each one is paid)</div></div>
+      <div class="panel tile"><div class="v" id="xshares">-</div><div class="k">shares per hour at this speed</div></div>
+      <div class="panel tile"><div class="v" id="blocks">-</div><div class="k">blocks found</div></div>
+      <div class="panel tile"><div class="v" id="mbalance">-</div><div class="k">balance of the reward address</div></div>
+      <div class="panel tile"><div class="v" id="earned">-</div><div class="k">earned per hour (last 10 minutes)</div></div>
+    </section>
+    <section class="panel">
+      <div class="row"><b>Intensity</b><input type="range" id="intensity" min="5" max="100" step="5" style="flex:1"><span id="intval"></span></div>
+      <p class="sub">The share of the time the hardware works; the rest it rests (cooler and quieter, less earned).</p>
+      <div class="row"><b>Device</b><span class="seg"><button id="gpu">GPU</button><button id="cpu">CPU</button></span></div>
+      <div class="msg" id="minemsg"></div>
+      <p class="sub" id="minenote"></p>
+    </section>
+  </div>
+</main>
+<script>
+"use strict";
+const TOKEN = "{{TOKEN}}";
+const $ = (id) => document.getElementById(id);
+let s = null, showingPhrase = false, tab = "wallet", dragging = false;
+try { tab = localStorage.getItem("hub-tab") || "wallet"; } catch (e) {}
+const grn = (y, d = 8) => (y / 1e8).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: d }) + " GRN";
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+const short = (a) => a ? a.slice(0, 14) + "…" + a.slice(-4) : "";
+
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-UI-Token": TOKEN }, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({ error: "bad answer" }));
+  if (!r.ok) throw new Error(d.error || r.statusText);
+  return d;
+}
+function say(id, text, bad) { $(id).textContent = text; $(id).className = "msg" + (bad ? " bad" : ""); }
+function emptyRow(tb, cols, text) { const tr = el("tr"); const td = el("td", text); td.colSpan = cols; tr.append(td); tb.append(tr); }
+
+function render() {
+  $("where").textContent = `${s.folder} · node ${s.node}` + (s.online ? ` · block ${s.height} · ${s.peers} peers` : " · node offline");
+  $("setup").hidden = s.exists || showingPhrase;
+  $("locked").hidden = !s.exists || s.unlocked || showingPhrase;
+  const show = s.exists && !showingPhrase;
+  $("tabs").hidden = !show;
+  for (const b of document.querySelectorAll("nav button")) b.className = b.dataset.tab === tab ? "sel" : "";
+  for (const t of ["wallet", "compute", "mining"]) $("tab-" + t).hidden = !show || t !== tab;
+  for (const e of document.querySelectorAll(".needs-key")) e.hidden = !s.unlocked;
+  if (!show) return;
+  // wallet
+  $("address").textContent = s.address;
+  $("balance").textContent = s.balance !== undefined ? grn(s.balance) : "?";
+  $("pending").textContent = s.pending !== undefined && s.pending !== s.balance ? `${grn(s.pending)} once pending transactions confirm` : "";
+  $("fee").textContent = s.transfer_fee !== undefined ? `Fee ${grn(s.transfer_fee)}` : "";
+  const tb = $("history"); tb.replaceChildren();
+  for (const r of s.history || []) {
+    const tr = el("tr");
+    const what = r.type === "reward" ? "mining reward" : r.type === "transfer" ? (r.role === "sender" ? "sent" : "received") : r.type.replace("_", " ");
+    const amt = r.amount !== undefined ? (r.role === "sender" ? "-" : "+") + grn(r.amount) : "";
+    tr.append(el("td", r.height === null ? "pending" : String(r.height)), el("td", what),
+              el("td", amt, r.role === "sender" ? "" : "in"), el("td", short(r.other)));
+    tb.append(tr);
+  }
+  if (!(s.history || []).length) emptyRow(tb, 4, "Nothing yet.");
+  // compute
+  const c = s.compute || {};
+  $("buy").disabled = $("job").disabled = $("close").disabled = !s.unlocked || c.busy;
+  if (!s.unlocked) say("computemsg", "Unlock the wallet to buy compute.");
+  else if (c.busy) say("computemsg", `Working on ${c.what}…`);
+  else if (c.error) say("computemsg", `${c.what}: ${c.error}`, true);
+  else if (c.result && c.result.shape) {
+    const r = c.result;
+    say("computemsg", `Bought ${r.shape.join("×")} (${r.privacy}) in ${r.seconds.toFixed(2)} s for ${grn(r.cost)}` +
+        (r.setup_seconds ? ` (+${r.setup_seconds.toFixed(0)} s opening channels)` : "") +
+        ` · checked ✓ · ${r.matches_local ? "same as computed here ✓" : "DIFFERENT from the local product"} (here: ${r.local_seconds.toFixed(2)} s)`);
+  } else if (c.result && c.result.job) say("computemsg", `Posted job ${c.result.job.slice(0, 12)}: ${c.result.units} units, escrow ${grn(c.result.escrow)}`);
+  else if (c.result && c.result.returned !== undefined) say("computemsg", "Channels closed; the unused coins come back as the providers claim.");
+  else say("computemsg", "");
+  $("channels").textContent = s.unlocked ? `${c.channels || 0} channels open · paid for compute so far: ${grn(c.paid || 0)}` : "";
+  const ob = $("offers"); ob.replaceChildren();
+  for (const o of s.offers || []) { const tr = el("tr"); tr.append(el("td", short(o.provider), "mono"), el("td", grn(o.price)), el("td", String(o.max_dim))); ob.append(tr); }
+  if (!(s.offers || []).length) emptyRow(ob, 3, "No offers heard yet.");
+  // mining
+  const m = s.mining || {};
+  $("mstate").textContent = m.mining ? "Mining" : "Stopped"; $("mstate").className = "state" + (m.mining ? " on" : "");
+  $("device").textContent = m.mining ? `on the ${m.gpu || "CPU"}, ${m.intensity}% of the time` : `${m.gpu || "CPU"} ready`;
+  $("toggle").textContent = m.mining ? "Stop mining" : "Start mining"; $("toggle").className = "b" + (m.mining ? " ghost" : "");
+  for (const id of ["toggle", "gpu", "cpu", "intensity"]) $(id).disabled = !m.here || !m.miner;
+  $("speed").textContent = m.mining ? m.units_per_second.toFixed(0) : "0";
+  $("shares").textContent = m.shares_found ?? "-"; $("blocks").textContent = m.blocks_found ?? "-";
+  $("xshares").textContent = m.mining && m.expected_shares_per_hour !== undefined ? String(m.expected_shares_per_hour) : "-";
+  $("mbalance").textContent = m.balance !== undefined ? grn(m.balance, 4) : "-";
+  $("earned").textContent = m.earned_per_hour === null || m.earned_per_hour === undefined ? (m.mining ? "measuring…" : "-") : grn(m.earned_per_hour, 4);
+  if (!dragging) { $("intensity").value = m.intensity || 100; $("intval").textContent = (m.intensity || 100) + "%"; }
+  $("gpu").className = m.gpu ? "sel" : ""; $("cpu").className = m.gpu ? "" : "sel";
+  $("minenote").textContent = !m.here ? "Mining is steered on the node itself: point the hub at a node on this computer."
+    : !m.miner ? "This node has no wallet, so it cannot mine: start it with the same folder (grn --data FOLDER node --mine --gpu)."
+    : m.miner !== s.address ? `The node mines for ${short(m.miner)}, not for this wallet: start it with this wallet's folder to mine for it.`
+    : `The node mines for this wallet. About ${m.share_factor} shares are paid per block across the network, so your income follows your work; finding the block itself adds little.`;
+}
+async function refresh() {
+  try { const r = await fetch("/api/state"); const d = await r.json(); if (!r.ok) throw new Error(d.error); s = d; render(); }
+  catch (e) { $("where").textContent = e.message || "the hub does not answer"; }
+}
+for (const b of document.querySelectorAll("nav button")) b.onclick = () => { tab = b.dataset.tab; try { localStorage.setItem("hub-tab", tab); } catch (e) {} render(); };
+
+$("create").onclick = async () => {
+  try { const r = await post("/api/create", { password: $("newpw").value }); $("newpw").value = "";
+        showingPhrase = true; $("words").replaceChildren(...r.phrase.split(" ").map((w, i) => el("div", `${i + 1}. ${w}`)));
+        $("newphrase").hidden = false; await refresh(); }
+  catch (e) { say("setupmsg", e.message, true); }
+};
+$("written").onclick = () => { showingPhrase = false; $("words").replaceChildren(); $("newphrase").hidden = true; refresh(); };
+$("restore").onclick = async () => {
+  try { await post("/api/restore", { phrase: $("phrase").value, password: $("newpw").value }); $("phrase").value = ""; $("newpw").value = ""; await refresh(); }
+  catch (e) { say("setupmsg", e.message, true); }
+};
+$("unlock").onclick = async () => {
+  try { await post("/api/unlock", { password: $("pw").value }); $("pw").value = ""; say("unlockmsg", ""); await refresh(); }
+  catch (e) { say("unlockmsg", e.message, true); }
+};
+$("pw").onkeydown = (e) => { if (e.key === "Enter") $("unlock").click(); };
+$("lock").onclick = async () => { await post("/api/lock", {}); await refresh(); };
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText(s.address); $("copy").textContent = "Copied"; setTimeout(() => $("copy").textContent = "Copy", 1500); } catch (e) {} };
+$("send").onclick = async () => {
+  const btn = $("send"); btn.disabled = true;
+  try { const r = await post("/api/send", { to: $("to").value, amount: $("amount").value });
+        say("sendmsg", `Sent: transaction ${r.txid.slice(0, 16)}… (fee ${grn(r.fee)}), in the next block`); $("amount").value = ""; await refresh(); }
+  catch (e) { say("sendmsg", e.message, true); }
+  finally { btn.disabled = false; }
+};
+async function compute(path, body) { try { await post(path, body); await refresh(); } catch (e) { say("computemsg", e.message, true); } }
+$("buy").onclick = () => compute("/api/buy", { m: +$("m").value, k: +$("k").value, n: +$("n").value, privacy: $("privacy").value });
+$("job").onclick = () => compute("/api/job", { m: +$("jm").value, k: +$("jk").value, n: +$("jn").value, price: $("jprice").value });
+$("close").onclick = () => compute("/api/close", {});
+async function mine(body, note) {
+  say("minemsg", note || "");
+  try { await post("/api/mining", body); await refresh(); say("minemsg", ""); } catch (e) { say("minemsg", e.message, true); }
+}
+$("toggle").onclick = () => mine({ on: !s.mining.mining });
+$("intensity").oninput = () => { dragging = true; $("intval").textContent = $("intensity").value + "%"; };
+$("intensity").onchange = async () => { await mine({ intensity: Number($("intensity").value) }); dragging = false; };
+$("gpu").onclick = () => mine({ gpu: true }, "Checking the GPU against the CPU…");
+$("cpu").onclick = () => mine({ gpu: false });
+refresh(); setInterval(refresh, 3000);
+</script>
+</body>
+</html>
