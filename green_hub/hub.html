@@ -188,7 +188,8 @@ function say(id, text, bad) { $(id).textContent = text; $(id).className = "msg" 
 function emptyRow(tb, cols, text) { const tr = el("tr"); const td = el("td", text); td.colSpan = cols; tr.append(td); tb.append(tr); }
 
 function render() {
-  $("where").textContent = `${s.folder} · node ${s.node}` + (s.online ? ` · block ${s.height} · ${s.peers} peers` : " · node offline");
+  $("where").textContent = `${s.folder} · node ${s.node}` + (s.online ? ` · block ${s.height} · ${s.peers} peers` +
+    (s.checkpoint ? ` · final up to ${s.checkpoint.height}` : "") : " · node offline");
   $("setup").hidden = s.exists || showingPhrase;
   $("locked").hidden = !s.exists || s.unlocked || showingPhrase;
   const show = s.exists && !showingPhrase;
@@ -207,7 +208,8 @@ function render() {
     const tr = el("tr");
     const what = r.type === "reward" ? "mining reward" : r.type === "transfer" ? (r.role === "sender" ? "sent" : "received") : r.type.replace("_", " ");
     const amt = r.amount !== undefined ? (r.role === "sender" ? "-" : "+") + grn(r.amount) : "";
-    tr.append(el("td", r.height === null ? "pending" : String(r.height)), el("td", what),
+    const final = r.height !== null && s.checkpoint && r.height <= s.checkpoint.height;
+    tr.append(el("td", r.height === null ? "pending" : String(r.height) + (final ? " · final" : ""), final ? "in" : ""), el("td", what),
               el("td", amt, r.role === "sender" ? "" : "in"), el("td", short(r.other)));
     tb.append(tr);
   }

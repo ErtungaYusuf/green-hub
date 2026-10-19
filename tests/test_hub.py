@@ -146,3 +146,22 @@ def test_an_unencrypted_wallet_needs_no_password(world, tmp_path):
         assert st["unlocked"] and not st["encrypted"] and st["address"] == key.address
     finally:
         plain.stop()
+
+
+def test_the_hub_shows_how_far_the_chain_is_final(tmp_path):
+    """On a network with checkpoints (Green 0.24) the state says up to which block it is final."""
+    folder = str(tmp_path / "me")
+    me, founder = create_wallet(folder, None), Key.generate()
+    genesis = make_genesis(me.address, f"hub | checkpoints {founder.pub_hex} until 100000")
+    node = Node(str(tmp_path / "n"), genesis, port=free_port(), miner_key=me, log=lambda m: None,
+                checkpoint_key=founder)
+    node.start(mine=True)
+    hub = Hub(folder, node.url, port=0)
+    hub.start()
+    try:
+        wait_until(lambda: call(hub, "/api/state", token=False).get("checkpoint"), "a checkpoint")
+        st = call(hub, "/api/state", token=False)
+        assert 1 <= st["checkpoint"]["height"] <= st["height"]
+    finally:
+        hub.stop()
+        node.stop()

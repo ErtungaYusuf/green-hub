@@ -4,11 +4,12 @@ Everything a person does with [Green (GRN)](https://github.com/ErtungaYusuf/gree
 
 - **Wallet:** create a wallet (24-word recovery phrase, encrypted with a password) or restore one; see the balance and history; send coins. Transactions are signed here and only the signed transaction goes to the node, so the node can be anyone's.
 - **Buy compute:** have the network's miners multiply matrices for you, paid product by product through payment channels. Every result is checked (Freivalds' test) before it is paid for and compared with the same product computed here. The data can be hidden from the miners: *split* (no miner sees the whole problem) or *secret* (each of three miners sees only random shares). Or post a job to the on-chain market, which miners compute as their mining work.
+- **Final or not:** on a network with its founder's checkpoints, the history marks the payments that are final (no chain can undo them).
 - **Mining:** start and stop the node's mining, set the intensity (the share of the time the GPU or CPU works), switch between GPU and CPU, and watch the shares found and what they earn. Nearly all of each block's reward goes to shares, about 128 a block, so income follows the work done, with no pool.
 
 ## Install
 
-Python 3.11 or newer, with Green 0.23 or newer installed (the green repository next to this one works too):
+Python 3.11 or newer, with Green 0.24 or newer installed (the green repository next to this one works too):
 
 ```bash
 pip install -e ../green

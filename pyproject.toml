@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "green-hub"
-version = "0.1.0"
+version = "0.2.0"
 description = "Green Hub (GRN): wallet, compute buying and mining in one page in the browser"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
-dependencies = ["green-grn>=0.23"]
+dependencies = ["green-grn>=0.24"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]

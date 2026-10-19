@@ -110,7 +110,8 @@ class Hub(LocalUI):
         except OSError as e:
             out.update(online=False, error=str(e))
             return out
-        out.update(online=True, height=st["height"], peers=len(st["peers"]), mining=self._mining(st))
+        out.update(online=True, height=st["height"], peers=len(st["peers"]), mining=self._mining(st),
+                   checkpoint=st.get("checkpoint"))           # blocks up to it are final (Green 0.24)
         if w is None:
             return out
         addr = w["address"]
