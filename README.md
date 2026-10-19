@@ -20,7 +20,7 @@ pip install -e ".[dev]"
 Run a node with your wallet's folder, so it mines for that wallet, then the hub on the same folder:
 
 ```bash
-grn --data me wallet create
+grn --data me wallet new
 grn --data me node --mine --gpu
 green-hub --data me --node http://127.0.0.1:8545
 ```
