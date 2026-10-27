@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
-dependencies = ["green-grn>=0.24"]
+dependencies = ["green-grn @ https://github.com/ErtungaYusuf/green/archive/refs/heads/main.zip"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
